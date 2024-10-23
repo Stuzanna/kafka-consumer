@@ -4,7 +4,7 @@
 
 # tells Docker what base image to use for the ap
 # this is the official python image rather than creating own base image
-FROM python:3.9.18
+FROM python:3.11.5
 
 # create a working dir, Docker should use this path as default location for subsequent commands
 # can use relative file paths based on the wd instead of full file paths
