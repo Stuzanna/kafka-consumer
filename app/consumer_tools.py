@@ -32,7 +32,7 @@ def load_schema(schema_file = None) -> str:
     with open(schema_file, 'r') as file:
         return json.dumps(json.load(file))
 
-def create_deserializer(serialization: str, schema_loc: str, schema_str: str = None, schema_registry_client = None):
+def create_deserializer(serialization: str, schema_loc: str = None, schema_str: str = None, schema_registry_client = None):
     """
     Create a deserializer based on the specified serialization format.
     If 'none' is specified, no serializer is created.
@@ -110,7 +110,7 @@ def setup_deserializer(serialization: str, schema_loc: str, schema_file: str = N
         The configured deserializer instance.
     """
     if serialization == 'none':
-        return create_deserializer('none', schema_loc)
+        return create_deserializer('none')
     
     if schema_loc == 'local':
         schema_str = load_schema(schema_file)
