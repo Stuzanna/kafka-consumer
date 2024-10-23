@@ -40,13 +40,9 @@ def load_schema(schema_loc: str, schema_file = None, schema_id = None, schema_re
         with open(schema_file, 'r') as schema_file:
             return json.dumps(json.load(schema_file))
     elif schema_loc == 'remote':
-        if schema_id is None:
-            raise ValueError("Schema ID must be provided for remote schemas.") # this seems wrong, it can be grabbed from the message
         if schema_registry_url is None:
             raise ValueError("Schema registry URL must be provided for remote schemas.")
-        print(f"Fetching schema from remote: {schema_registry_url}")
-        response = requests.get(f"{schema_registry_url}/schemas/ids/{schema_id}")
-        return response.json()["schema"]
+        return None
     else:
         raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
 
@@ -82,7 +78,7 @@ def create_deserializer(serialization, schema_str, schema_registry_client):
         return JSONDeserializer(schema_str)
     elif serialization == 'avro':
         print("Creating Avro deserializer...")
-        return AvroDeserializer(schema_registry_client, schema_str)
+        return AvroDeserializer(schema_registry_client)
     elif serialization == 'none':
         print('No serialization selected, skipping deserializer creation.')
         return None

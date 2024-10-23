@@ -8,7 +8,7 @@ from consumer_tools import load_schema, create_deserializer
 
 # -- Consumer Config --
 bootstrap_servers = "localhost:19092"
-topics = ["customers"]
+topics = ["customers-avro"]
 sleep_time = 1 # Sleep between each message
 client_id = "my-python-consumer"
 consumer_group_id = "my-pythonic-consumer-group"
@@ -39,17 +39,12 @@ serialization = "none"
 
 # --- Create deserializer ---
 if serialization in ['json', 'avro']:
-    if schema_loc == 'local':
-        schema_str = load_schema(schema_loc, schema_file)
-    elif schema_loc == 'remote':
-        schema_str = load_schema(schema_loc, None, schema_id, schema_registry_url)
-    else:
-        raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
-    
+    schema_str = load_schema(schema_loc, schema_file)
     deserializer = create_deserializer(serialization, schema_str, schema_registry_client)
-    print(f"Success: Created {serialization.upper()} serializer.")
+    print(f"Success: Created {serialization.upper()} deserializer.")
 else:
-    create_deserializer(serialization, None, None)
+    deserializer = create_deserializer(serialization, None, None)
+    print(f"Success: No deserializer needed as serizliation is: {serialization.upper()}.")
 
 # --- Creating the Consumer ---
 consumer = Consumer(conf)
