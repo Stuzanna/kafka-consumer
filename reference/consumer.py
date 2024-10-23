@@ -4,7 +4,7 @@ from confluent_kafka import Consumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.serialization import SerializationContext, MessageField
 
-from consumer_tools import load_schema, create_deserializer
+from consumer_tools import setup_deserializer
 
 # -- Consumer Config --
 bootstrap_servers = "localhost:19092"
@@ -25,26 +25,17 @@ conf = {
     }
 
 # SR config, constructor, schema definition, serialization type
-schema_registry_url = "http://localhost:8081"
+schema_registry_url = "http://localhost:8084"
 schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR_UserName:SR_Password>'}
 
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-schema_loc = 'local' # local or remote
-schema_file = './schemas/customer-1.avsc' # or .json
-schema_id = 1
-subject = 'customers-value'
+serialization = "avro"
+schema_loc = 'remote' # local or remote
+# schema_file = './schemas/customer-1.avsc' # or .json
 
-serialization = "none"
-
-# --- Create deserializer ---
-if serialization in ['json', 'avro']:
-    schema_str = load_schema(schema_loc, schema_file)
-    deserializer = create_deserializer(serialization, schema_str, schema_registry_client)
-    print(f"Success: Created {serialization.upper()} deserializer.")
-else:
-    deserializer = create_deserializer(serialization, None, None)
-    print(f"Success: No deserializer needed as serizliation is: {serialization.upper()}.")
+# --- Set the deserializer ---
+deserializer = setup_deserializer(serialization, schema_loc, schema_registry_client=schema_registry_client)
 
 # --- Creating the Consumer ---
 consumer = Consumer(conf)

@@ -3,7 +3,7 @@ import json
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.schema_registry.json_schema import JSONDeserializer
 
-def load_schema(schema_loc: str, schema_file = None) -> str:
+def load_schema(schema_file = None) -> str:
     """
     Load a schema from a local file. Remote schemas can't be loaded from file.
 
@@ -24,8 +24,6 @@ def load_schema(schema_loc: str, schema_file = None) -> str:
     ValueError
         If schema_loc is not 'local' or if schema_file is missing.
     """
-    if schema_loc != 'local':
-        raise ValueError("This function is only for local files.")
     
     if schema_file is None:
         raise ValueError("Schema file must be provided for local schemas.")
@@ -89,3 +87,37 @@ def create_deserializer(serialization: str, schema_loc: str, schema_str: str = N
         return None
     else:
         raise ValueError(f"Invalid serialization: {serialization}. Expected 'avro', 'json' or 'none'.")
+
+def setup_deserializer(serialization: str, schema_loc: str, schema_file: str = None, 
+                              schema_registry_client = None):
+    """
+    Set up the appropriate deserializer based on configuration.
+    
+    Parameters:
+    ----------
+    serialization : str
+        The serialization format to use ('json', 'avro', or 'none').
+    schema_loc : str
+        The location of the schema ('local' or 'remote').
+    schema_file : str, optional
+        Path to the local schema file (required for local schemas).
+    schema_registry_client : SchemaRegistryClient, optional
+        The client instance for Schema Registry (required only for remote schemas).
+        
+    Returns:
+    -------
+    Deserializer
+        The configured deserializer instance.
+    """
+    if serialization == 'none':
+        return create_deserializer('none')
+    
+    if schema_loc == 'local':
+        schema_str = load_schema(schema_file)
+        return create_deserializer(serialization, schema_loc, schema_str)
+    
+    elif schema_loc == 'remote':
+        return create_deserializer(serialization, schema_loc, 
+                                 schema_registry_client=schema_registry_client)
+    else:
+        raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
