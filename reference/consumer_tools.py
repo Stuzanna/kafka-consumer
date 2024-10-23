@@ -41,7 +41,7 @@ def load_schema(schema_loc: str, schema_file = None, schema_id = None, schema_re
             return json.dumps(json.load(schema_file))
     elif schema_loc == 'remote':
         if schema_id is None:
-            raise ValueError("Schema ID must be provided for remote schemas.")
+            raise ValueError("Schema ID must be provided for remote schemas.") # this seems wrong, it can be grabbed from the message
         if schema_registry_url is None:
             raise ValueError("Schema registry URL must be provided for remote schemas.")
         print(f"Fetching schema from remote: {schema_registry_url}")
