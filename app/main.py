@@ -1,4 +1,5 @@
 import time
+import os
 
 from confluent_kafka import Consumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -6,9 +7,26 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 
 from consumer_tools import setup_deserializer
 
+# --- Define Inputs ---
+bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:19092')
+print(f"Using bootstrap servers: {bootstrap_servers}")
+
+schema_registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8084')
+print(f"Using schema registry url: {schema_registry_url}")
+
+serialization = os.getenv('SERIALIZATION', 'none')
+print(f"Using serialization: {serialization}")
+
+schema_loc = os.getenv('SCHEMA_LOC', 'remote')
+print(f"Using schema location: {schema_loc}")
+
+topic_names = os.getenv('TOPICS', "customers").split(',')
+print(f"Using topics: {topic_names}")
+topic_names = [topic.strip() for topic in topic_names] #Strip any extra whitespace
+print(f"Topic values after whitespace: {topic_names}")
+
 # -- Consumer Config --
-bootstrap_servers = "localhost:19092"
-topics = ["customers"]
+topics = topic_names
 sleep_time = 1 # Sleep between each message
 client_id = "my-python-consumer"
 consumer_group_id = "my-pythonic-consumer-group"
@@ -25,7 +43,6 @@ conf = {
     }
 
 # SR config, constructor, schema definition, serialization type
-schema_registry_url = "http://localhost:8084"
 schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR_UserName:SR_Password>'}
 
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
