@@ -9,28 +9,28 @@ from consumer_tools import setup_deserializer
 
 # --- Define Inputs ---
 bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:19092')
-print(f"Using bootstrap servers: {bootstrap_servers}")
-
+print(f'KAFKA_BOOTSTRAP_SERVERS: {bootstrap_servers}')
 schema_registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8084')
-print(f"Using schema registry url: {schema_registry_url}")
-
+print(f'SCHEMA_REGISTRY_URL: {schema_registry_url}')
 serialization = os.getenv('SERIALIZATION', 'none')
-print(f"Using serialization: {serialization}")
-
+print(f'SERIALIZATION: {serialization}')
 schema_loc = os.getenv('SCHEMA_LOC', 'remote')
-print(f"Using schema location: {schema_loc}")
-
-topic_names = os.getenv('TOPICS', "customers").split(',')
-print(f"Using topics: {topic_names}")
-topic_names = [topic.strip() for topic in topic_names] #Strip any extra whitespace
-print(f"Topic values after whitespace: {topic_names}")
+print(f'SCHEMA_LOC: {schema_loc}')
+schema_file_path = os.getenv('SCHEMA_FILE_PATH', None)
+topics = os.getenv('TOPICS', 'customers').split(',')
+print(f'TOPICS: {topics}')
+topics = [topic.strip() for topic in topics] #Strip any extra whitespace
+print(f'TOPICS after trim whitespace: {topics}')
+sleep_time = int(os.getenv('SLEEP_TIME', '1')) # Sleep between each message
+print(f'SLEEP_TIME: {sleep_time}')
+client_id = os.getenv('CLIENT_ID', 'my-python-consumer')
+print(f'CLIENT_ID: {client_id}')
+consumer_group_id = os.getenv('CONSUMER_GROUP_ID', 'my-mostly-pythonic-consumer-group')
+print(f'CONSUMER_GROUP_ID: {consumer_group_id}')
+auto_offset_reset = os.getenv('AUTO_OFFSET_RESET', 'earliest')
+print(f'AUTO_OFFSET_RESET: {auto_offset_reset}')
 
 # -- Consumer Config --
-topics = topic_names
-sleep_time = 1 # Sleep between each message
-client_id = "my-python-consumer"
-consumer_group_id = "my-pythonic-consumer-group"
-offset_config = "earliest"
 conf = {
     'bootstrap.servers': bootstrap_servers,
     'client.id': client_id,
@@ -39,17 +39,13 @@ conf = {
     # 'ssl.ca.location': '../sslcerts/ca.pem',
     # 'ssl.certificate.location': '../sslcerts/service.cert',
     # 'ssl.key.location': '../sslcerts/service.key', 
-    'auto.offset.reset': offset_config,
+    'auto.offset.reset': auto_offset_reset,
     }
 
 # SR config, constructor, schema definition, serialization type
 schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR_UserName:SR_Password>'}
 
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
-
-serialization = "none"
-schema_loc = 'remote' # local or remote
-# schema_file = './schemas/customer-1.avsc' # or .json
 
 # --- Set the deserializer ---
 deserializer = setup_deserializer(serialization, schema_loc, schema_registry_client=schema_registry_client)
@@ -81,7 +77,7 @@ try:
                     print(f"{msg.partition()}:{msg.offset()}: "
                         f"k={key} "
                         f"v={value}")
-                    time.sleep(sleep_time)  
+                    time.sleep(sleep_time)
 
         except KeyboardInterrupt:
             print("KeyboardInterrupt detected. Stopping the consumer...")

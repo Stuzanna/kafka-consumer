@@ -2,7 +2,7 @@
 
 # https://docs.docker.com/language/python/build-images/
 
-# tells Docker what base image to use for the ap
+# tells Docker what base image to use for the app
 # this is the official python image rather than creating own base image
 FROM python:3.11.5
 
