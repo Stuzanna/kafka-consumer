@@ -12,9 +12,9 @@ bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:19092')
 print(f'KAFKA_BOOTSTRAP_SERVERS: {bootstrap_servers}')
 schema_registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8084')
 print(f'SCHEMA_REGISTRY_URL: {schema_registry_url}')
-serialization = os.getenv('SERIALIZATION', 'none')
+serialization = os.getenv('SERIALIZATION', None)
 print(f'SERIALIZATION: {serialization}')
-schema_loc = os.getenv('SCHEMA_LOC', 'remote')
+schema_loc = os.getenv('SCHEMA_LOC', None)
 print(f'SCHEMA_LOC: {schema_loc}')
 schema_file_path = os.getenv('SCHEMA_FILE_PATH', None)
 topics = os.getenv('TOPICS', 'customers').split(',')
@@ -48,7 +48,7 @@ schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
 # --- Set the deserializer ---
-deserializer = setup_deserializer(serialization, schema_loc, schema_registry_client=schema_registry_client)
+deserializer = setup_deserializer(serialization = serialization, schema_loc = schema_loc, schema_registry_client=schema_registry_client)
 
 # --- Creating the Consumer ---
 consumer = Consumer(conf)
@@ -67,12 +67,12 @@ try:
 
             else:
                     key = msg.key().decode('utf-8')
-                    if serialization in ['json', 'avro']:
-                          value = deserializer(msg.value(), SerializationContext(topics[0], MessageField.VALUE))
-                    elif serialization == 'none':
+                    if serialization == None:
                         value = msg.value().decode('utf-8')
+                    elif serialization in ['json', 'avro']:
+                          value = deserializer(msg.value(), SerializationContext(topics[0], MessageField.VALUE))
                     else:
-                        raise ValueError(f"Invalid serialization type: {serialization}. Expected 'avro', 'json' or 'none'.")
+                        raise ValueError(f"Invalid serialization type: {serialization}. Expected 'avro', 'json' or None.")
                     
                     print(f"{msg.partition()}:{msg.offset()}: "
                         f"k={key} "
