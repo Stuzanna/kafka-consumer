@@ -36,9 +36,10 @@ def callback(err, event):
         print(f'key:{key} : value:{val} | Sent to \'{event.topic()}\' partition: {event.partition()}.')
 
 # Create serializer based on schema location and serialization format
-def load_schema(schema_loc: str, schema_file = None, schema_id = None, schema_registry_url = None) -> str:
+def load_schema(schema_loc: str, schema_file = None, schema_id = None, subject = None, schema_registry_url = None) -> str:
     """
     Load a schema based on the provided schema location (local or remote).
+    This could be rewritten to make better use of the schema_registry_client for registering and working with schemas, not the HTTP calls directly done here.
 
     This function loads a schema either from a local file or by fetching it 
     from a remote schema registry, depending on the specified `schema_loc`.
@@ -50,7 +51,9 @@ def load_schema(schema_loc: str, schema_file = None, schema_id = None, schema_re
     schema_file : str, optional
         Path to the local schema file (required if `schema_loc` is 'local').
     schema_id : int, optional
-        The ID of the schema to fetch from the schema registry (required if `schema_loc` is 'remote').
+        The ID of the schema to fetch from the schema registry an alternative to subject (required if `schema_loc` is 'remote').
+    subject: str, optional
+        The schema subject name to fetch  the schema registry, an alternative to schema_id (required if `schema_loc` is 'remote').
     schema_registry_url : str, optional
         The base URL of the schema registry (required if `schema_loc` is 'remote').
 
@@ -71,13 +74,20 @@ def load_schema(schema_loc: str, schema_file = None, schema_id = None, schema_re
         with open(schema_file, 'r') as f:
             return json.dumps(json.load(f))
     elif schema_loc == 'remote':
-        if schema_id is None:
-            raise ValueError("Schema ID must be provided for remote schemas.")
         if schema_registry_url is None:
             raise ValueError("Schema registry URL must be provided for remote schemas.")
-        print(f"Fetching schema from remote: {schema_registry_url}")
-        response = requests.get(f"{schema_registry_url}/schemas/ids/{schema_id}")
-        return response.json()["schema"]
+        if schema_id is not None:
+            print(f"Fetching schema from remote: {schema_registry_url}")
+            response = requests.get(f"{schema_registry_url}/schemas/ids/{schema_id}")
+            return response.json()["schema"]
+        if subject is not None:
+            print(f"Fetching latest schema for subject: {subject}")
+            response = requests.get(f"{schema_registry_url}/subjects/{subject}/versions/latest")
+            print(f"response: {response}")
+            return response.json()["schema"]
+                    
+        raise ValueError("Either schema_id or subject must be provided for remote schema")
+
     else:
         raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
     
@@ -98,7 +108,7 @@ def create_serializer(serialization, schema_str = None, schema_registry_client =
         The schema in JSON format to use for serialization.
     schema_registry_client : SchemaRegistryClient
         The client instance for interacting with the Schema Registry.
-
+    
     Returns:
     -------
     JSONSerializer, AvroSerializer, or None
@@ -112,7 +122,6 @@ def create_serializer(serialization, schema_str = None, schema_registry_client =
     if serialization == 'json':
         print("Creating JSON serializer...")
         return JSONSerializer(schema_str, schema_registry_client) if schema_registry_client is not None else JSONSerializer(schema_str, conf={"auto.register.schemas":False})
-
     elif serialization == 'avro':
         print("Creating Avro serializer...")
         return AvroSerializer(schema_registry_client, schema_str) if schema_registry_client is not None else AvroSerializer(schema_str=schema_str, conf={"auto.register.schemas":False})

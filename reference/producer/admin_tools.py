@@ -1,5 +1,6 @@
 from confluent_kafka.admin import (AdminClient, NewTopic, 
                                    ConfigResource)
+import sys
 
 # return True if topic exists and False if not
 def topic_exists(admin, topic):
@@ -9,16 +10,17 @@ def topic_exists(admin, topic):
             return True
     return False
 
-# create new topic and return results dictionary
-def create_topic(admin, topic):
-    new_topic = NewTopic(topic, num_partitions=3, replication_factor=1) 
+def create_topic(admin, topic, num_partitions=6, replication_factor=3):
+    '''Create new topic and return results dictionary,'''
+    new_topic = NewTopic(topic, num_partitions, replication_factor) 
     result_dict = admin.create_topics([new_topic])
     for topic, future in result_dict.items():
         try:
             future.result()  # The result itself is None
             print("Topic {} created".format(topic))
         except Exception as e:
-            print("Failed to create topic {}: {}".format(topic, e))
+            print(f"Failed to create topic {topic}: {e} Exiting...")
+            sys.exit(1) # Causes errors
 
 # get max.message.bytes property
 def get_max_size(admin, topic):

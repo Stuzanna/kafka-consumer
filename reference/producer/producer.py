@@ -9,9 +9,9 @@ from confluent_kafka import Producer, KafkaException
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.admin import AdminClient
 
-from kafka_tools.person import Person
-from kafka_tools.admin_tools import topic_exists, create_topic
-from kafka_tools.producer_tools import load_schema, create_serializer, produce_record
+from person import Person
+from admin_tools import topic_exists, create_topic, register_schema
+from producer_tools import load_schema, create_serializer, produce_record
 
 # Producer config
 bootstrap_servers = 'localhost:19092'
@@ -27,18 +27,22 @@ schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
 schema_loc = 'remote' # local or remote
-schema_id = 1
-# subject = 'customers-avro-value'
+schema_id = None
+subject = 'customers-avro-value'
+
 serialization = "avro" # avro, json, none
 schema_file = './schemas/customer-1.avsc' # or .json
 cluster_sizing = 'small' # 'small' for demos with 1 broker
+
+# register schema if not already present
+register_schema(schema_registry_url, subject, schema_file)
 
 # load schema, from remote schema registry or local file
 if serialization in ['json', 'avro']:
     if schema_loc == 'local':
         schema_str = load_schema(schema_loc, schema_file)
     elif schema_loc == 'remote':
-        schema_str = load_schema(schema_loc, None, schema_id, schema_registry_url)
+        schema_str = load_schema(schema_loc, None, schema_id, subject, schema_registry_url)
     else:
         raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
     serializer = create_serializer(serialization, schema_str=schema_str, schema_registry_client=schema_registry_client)
@@ -55,7 +59,7 @@ admin_client = AdminClient(config)
 try:
     if not topic_exists(admin_client, topic):
         if cluster_sizing == 'small':
-            create_topic(admin_client, topic)
+            create_topic(admin_client, topic, num_partitions=3, replication_factor=1)
         else:
             create_topic(admin_client, topic)
 except Exception as e:
@@ -95,7 +99,7 @@ try:
             logging.error(f"Produce message error: {e}")
             break
 except KeyboardInterrupt:
-    print("KeboardInterrupt. Stopping the producer...")
+    print("KeyboardInterrupt. Stopping the producer...")
 finally:
     print("Attempting to flush the producer...")
     producer.flush()
