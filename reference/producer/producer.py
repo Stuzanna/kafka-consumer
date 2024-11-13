@@ -9,9 +9,9 @@ from confluent_kafka import Producer, KafkaException
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.admin import AdminClient
 
-from person import Person
-from admin_tools import topic_exists, create_topic
-from producer_tools import load_schema, create_serializer, produce_record
+from kafka_tools.person import Person
+from kafka_tools.admin_tools import topic_exists, create_topic
+from kafka_tools.producer_tools import load_schema, create_serializer, produce_record
 
 # Producer config
 bootstrap_servers = 'localhost:19092'
@@ -22,14 +22,13 @@ config = {
 sleep_time = 5 # between each message being sent
 
 # SR config, schema definition, serialization type
-schema_registry_url = "http://localhost:8081"
+schema_registry_url = "http://localhost:8084"
 schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR_UserName:SR_Password>'}
-
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-schema_loc = 'local' # local or remote
-# schema_id = 2
-subject = 'customers-avro-value'
+schema_loc = 'remote' # local or remote
+schema_id = 1
+# subject = 'customers-avro-value'
 serialization = "avro" # avro, json, none
 schema_file = './schemas/customer-1.avsc' # or .json
 cluster_sizing = 'small' # 'small' for demos with 1 broker
@@ -42,8 +41,7 @@ if serialization in ['json', 'avro']:
         schema_str = load_schema(schema_loc, None, schema_id, schema_registry_url)
     else:
         raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
-    
-    serializer = create_serializer(serialization, schema_str, schema_registry_client)
+    serializer = create_serializer(serialization, schema_str=schema_str, schema_registry_client=schema_registry_client)
     print(f"Success: Created {serialization.upper()} serializer.")
 else:
     create_serializer(serialization, None, None)
@@ -57,7 +55,7 @@ admin_client = AdminClient(config)
 try:
     if not topic_exists(admin_client, topic):
         if cluster_sizing == 'small':
-            create_topic(admin_client, topic, 3, 1)
+            create_topic(admin_client, topic)
         else:
             create_topic(admin_client, topic)
 except Exception as e:
