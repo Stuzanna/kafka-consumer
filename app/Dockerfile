@@ -6,6 +6,10 @@
 # this is the official python image rather than creating own base image
 FROM python:3.11.5
 
+# Don't wait to print logs
+ENV PYTHONUNBUFFERED=1
+
+
 # create a working dir, Docker should use this path as default location for subsequent commands
 # can use relative file paths based on the wd instead of full file paths
 
