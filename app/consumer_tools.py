@@ -66,7 +66,7 @@ def create_deserializer(serialization: str = None, schema_loc: str = None, schem
             if schema_registry_client is None:
                 raise ValueError("SR client required for remote JSON deserialization.")
             print("Creating JSON deserializer with remote schema...")
-            return JSONDeserializer(schema_registry_client=schema_registry_client)
+            return JSONDeserializer(None, schema_registry_client=schema_registry_client)
         else:
             if schema_str is None:
                 raise ValueError("Schema string required for local JSON deserialization.")
