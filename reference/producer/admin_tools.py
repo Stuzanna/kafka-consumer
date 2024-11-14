@@ -70,17 +70,32 @@ def callback(err, event):
 import subprocess
 import json
 
-def register_schema(schema_registry_url, subject_name, schema_file_path):
+def register_schema(schema_registry_url: str, subject_name: str, schema_file_path: str, serialization: str = 'avro'):
+    '''
+    Register a schema with schema registry.
+    Serialization only needed if JSON, assumes AVRO.
+    '''
     # Read the schema from the file
     with open(schema_file_path, 'r') as schema_file:
         schema_str = schema_file.read()
+    
+    if serialization == 'json':
+        schema_type = 'JSON'
+    else:
+        schema_type = 'AVRO'
+
+    payload = {
+        "schemaType": schema_type,
+        "schema": schema_str
+
+    }
 
     # Prepare the curl command
     curl_command = [
         "curl",
         "-X", "POST",
         "-H", "Content-Type: application/vnd.schemaregistry.v1+json",
-        "-d", json.dumps({"schema": schema_str}),
+        "-d", json.dumps(payload),
         "-w", "%{http_code}",  # Write the HTTP status code to stdout
         "-s",  # Silent mode (don't show progress meter or error messages)
         "-o", "-",  # Write response body to stdout
