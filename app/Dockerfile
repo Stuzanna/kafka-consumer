@@ -1,35 +1,34 @@
-# syntax=docker/dockerfile:1
-
-# https://docs.docker.com/language/python/build-images/
-
-# tells Docker what base image to use for the app
-# this is the official python image rather than creating own base image
-FROM python:3.11.5
-
-# Don't wait to print logs
-ENV PYTHONUNBUFFERED=1
-
-
-# create a working dir, Docker should use this path as default location for subsequent commands
-# can use relative file paths based on the wd instead of full file paths
+# Stage 1: Builder
+FROM python:3.9-slim AS builder
 
 WORKDIR /app
 
-# normal to pip3 install things, need requirements.txt into the image. Use COPY to do this
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt requirements.txt
-#takes two param, what file like to copy in, where to copy to
-# copy the file into the working dir
+# Install requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# can use RUN, same as running locally on a machine, pip installs modules into the image
-RUN pip3 install -r requirements.txt
-# now we have an image based on python3.8, and installed dependencies
-# next lets add in code
-#---
+# Stage 2: Runtime
+FROM python:3.9-slim
 
+ENV PYTHONUNBUFFERED=1
 
-# take all files in the current dir, copy into the image
+WORKDIR /app
+
+# Copy just the installed packages from builder
+COPY --from=builder /usr/local/lib/python3.9/site-packages/ /usr/local/lib/python3.9/site-packages/
+
+# Copy application files
 COPY . .
 
-# tell docker what cmd to run when image is executed inside a container
-CMD ["python3", "-m" , "main.py"]
+# Create non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Run the script directly
+CMD ["python", "-u", "main.py"]
