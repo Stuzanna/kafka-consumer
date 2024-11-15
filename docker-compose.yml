@@ -1,4 +1,16 @@
 services:
+  kafka-consumer:
+    image: stuzanne/kafka-consumer:1.0
+    hostname: kafka-consumer
+    container_name: kafka-consumer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8084
+      TOPICS: customers
+      # TOPICS: customers-avro
+      # SERIALIZATION: avro
+      # SCHEMA_LOC: remote
+
   conduktor-console:
     image: conduktor/conduktor-console:1.28.0
     depends_on:
@@ -10,8 +22,6 @@ services:
     volumes:
       - conduktor_data:/var/conduktor
     environment:
-      CDK_ADMIN_EMAIL: "admin@conduktor.io"
-      CDK_ADMIN_PASSWORD: "adminP4ss!"
       CDK_DATABASE_URL: "postgresql://conduktor:change_me@postgresql:5432/conduktor-platform"
       CDK_CLUSTERS_0_ID: "local-confluent"
       CDK_CLUSTERS_0_NAME: "local-confluent"
