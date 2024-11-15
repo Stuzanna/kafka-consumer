@@ -32,10 +32,10 @@ subject = 'customers-avro-value'
 
 serialization = "avro" # avro, json, none
 schema_file = './schemas/customer-1.avsc' # or .json
-cluster_sizing = 'small' # 'small' for demos with 1 broker
 
 # register schema if not already present
-register_schema(schema_registry_url, subject, schema_file)
+register_schema(schema_registry_url, subject, schema_file, serialization)
+cluster_sizing = 'small' # 'small' for demos with 1 broker
 
 # load schema, from remote schema registry or local file
 if serialization in ['json', 'avro']:

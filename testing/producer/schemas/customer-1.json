@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "customer-info",
+  "description": "Customer data schema",
+  "type": "object",
+  "required": ["name", "address", "email", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "Name of customer",
+      "type": "string"
+    },
+    "address": {
+      "description": "Customer's address",
+      "type": "string"
+    },
+    "email": {
+      "description": "Customer's email",
+      "type": "string"
+    },
+    "timestamp": {
+      "description": "Timestamp YYYY-MM-DD HH:MM:SS",
+      "type": "string"
+    }
+  }
+}
