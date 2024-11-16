@@ -32,15 +32,15 @@ def load_schema(schema_file = None) -> str:
     with open(schema_file, 'r') as file:
         return json.dumps(json.load(file))
 
-def create_deserializer(serialization: str, schema_loc: str, schema_str: str = None, schema_registry_client = None):
+def create_deserializer(serialization: str = None, schema_loc: str = None, schema_str: str = None, schema_registry_client = None):
     """
     Create a deserializer based on the specified serialization format.
-    If 'none' is specified, no serializer is created.
+    If none is specified, no deserializer is created.
 
     Parameters:
     ----------
     serialization : str
-        The serialization format to use. Expected values are 'json', 'avro', or 'none'.
+        The serialization format to use. Expected values are 'json' or 'avro'.
     schema_loc : str
         The location of the schema ('local' or 'remote').
     schema_str : str, optional
@@ -58,12 +58,15 @@ def create_deserializer(serialization: str, schema_loc: str, schema_str: str = N
     ValueError
         If an invalid parameters provided or required are missing.
     """
-    if serialization == 'json':
+    if serialization is None:
+        print('No serialization provided, skipping deserializer creation.')
+        return None
+    elif serialization == 'json':
         if schema_loc == 'remote':
             if schema_registry_client is None:
                 raise ValueError("SR client required for remote JSON deserialization.")
             print("Creating JSON deserializer with remote schema...")
-            return JSONDeserializer(schema_registry_client=schema_registry_client)
+            return JSONDeserializer(None, schema_registry_client=schema_registry_client)
         else:
             if schema_str is None:
                 raise ValueError("Schema string required for local JSON deserialization.")
@@ -81,14 +84,10 @@ def create_deserializer(serialization: str, schema_loc: str, schema_str: str = N
                 raise ValueError("Schema string required for local JSON deserialization.")
             print("Creating Avro deserializer with local schema...")
             return AvroDeserializer(schema_str)
-        
-    elif serialization == 'none':
-        print('No serialization selected, skipping deserializer creation.')
-        return None
     else:
-        raise ValueError(f"Invalid serialization: {serialization}. Expected 'avro', 'json' or 'none'.")
+        raise ValueError(f"Invalid serialization: {serialization}. Expected 'avro', 'json' or None.")
 
-def setup_deserializer(serialization: str, schema_loc: str, schema_file: str = None, 
+def setup_deserializer(serialization: str = None, schema_loc: str = None, schema_file: str = None, 
                               schema_registry_client = None):
     """
     Set up the appropriate deserializer based on configuration.
@@ -96,7 +95,7 @@ def setup_deserializer(serialization: str, schema_loc: str, schema_file: str = N
     Parameters:
     ----------
     serialization : str
-        The serialization format to use ('json', 'avro', or 'none').
+        The serialization format to use ('json', 'avro', or None).
     schema_loc : str
         The location of the schema ('local' or 'remote').
     schema_file : str, optional
@@ -109,10 +108,10 @@ def setup_deserializer(serialization: str, schema_loc: str, schema_file: str = N
     Deserializer
         The configured deserializer instance.
     """
-    if serialization == 'none':
-        return create_deserializer('none')
+    if serialization is None:
+        return create_deserializer()
     
-    if schema_loc == 'local':
+    elif schema_loc == 'local':
         schema_str = load_schema(schema_file)
         return create_deserializer(serialization, schema_loc, schema_str)
     

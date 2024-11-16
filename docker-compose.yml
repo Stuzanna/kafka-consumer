@@ -1,4 +1,16 @@
 services:
+  kafka-consumer:
+    image: stuzanne/kafka-consumer:1.0
+    hostname: kafka-consumer
+    container_name: kafka-consumer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8084
+      TOPICS: customers
+      # TOPICS: customers-avro
+      # SERIALIZATION: avro
+      # SCHEMA_LOC: remote
+
   conduktor-console:
     image: conduktor/conduktor-console:1.28.0
     depends_on:
@@ -10,8 +22,6 @@ services:
     volumes:
       - conduktor_data:/var/conduktor
     environment:
-      CDK_ADMIN_EMAIL: "admin@conduktor.io"
-      CDK_ADMIN_PASSWORD: "adminP@ss!"
       CDK_DATABASE_URL: "postgresql://conduktor:change_me@postgresql:5432/conduktor-platform"
       CDK_CLUSTERS_0_ID: "local-confluent"
       CDK_CLUSTERS_0_NAME: "local-confluent"
@@ -32,7 +42,7 @@ services:
       CDK_MONITORING_NOTIFICATIONS-CALLBACK-URL: http://localhost:8080
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.1
+    image: confluentinc/cp-zookeeper:7.7.0
     hostname: zookeeper
     container_name: zookeeper
     environment:
@@ -45,7 +55,7 @@ services:
   kafka1:
     hostname: kafka1
     container_name: kafka1
-    image: confluentinc/cp-kafka:7.4.1
+    image: confluentinc/cp-kafka:7.7.0
     ports:
     - 19092:19092
     environment:
@@ -94,50 +104,11 @@ services:
       test: nc -zv schema-registry 8084 || exit 1
       interval: 5s
       retries: 25
-
-  # kafka-1:
-  #   image: apache/kafka-native:latest
-  #   ports:
-  #     - 9092:9092
-  #   # volumes:
-  #   # - kafka1:volumes:/var/lib/redpanda/data
-
-  # redpanda-0:
-  #   command:
-  #     - redpanda
-  #     - start
-  #     - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-  #     - --advertise-kafka-addr internal://redpanda-0:9092,external://localhost:19092
-  #     - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
-  #     # Address the broker advertises to clients that connect to the HTTP Proxy.
-  #     - --advertise-pandaproxy-addr internal://redpanda-0:8082,external://localhost:18082
-  #     - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
-  #     # Redpanda brokers use the RPC API to communicate with eachother internally.
-  #     - --rpc-addr redpanda-0:33145
-  #     - --advertise-rpc-addr redpanda-0:33145
-  #     - --smp 1
-  #     - --memory 1G
-  #     - --mode dev-container
-  #     - --default-log-level=info
-  #   image: docker.redpanda.com/redpandadata/redpanda:v23.1.11
-  #   container_name: redpanda-0
-  #   volumes:
-  #     - redpanda-0:/var/lib/redpanda/data
-  #   ports:
-  #     - 18081:18081
-  #     - 18082:18082
-  #     - 19092:19092
-  #     - 19644:9644
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
-  #     interval: 15s
-  #     timeout: 3s
-  #     retries: 5
-  #     start_period: 5s
   
   postgresql:
-    image: postgres:14
+    image: postgres:16
     hostname: postgresql
+    container_name: cdk-postgres
     volumes:
       - pg_data:/var/lib/postgresql/data
     environment:
@@ -155,6 +126,8 @@ services:
 
   data-generator:
     # my data generator
+    hostname: data-generator
+    container_name: data-generator
     image: stuzanne/kafka-data-generator:0.5
     # restart: always
     environment:
@@ -163,7 +136,6 @@ services:
       # MESSAGE_DELAY_SECONDS: 2 # 2 default
       # TOPICS: customers,pizza-orders,products
     depends_on:
-      # - redpanda-0
       - kafka1
 
 volumes:

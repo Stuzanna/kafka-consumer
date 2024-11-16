@@ -1,18 +1,36 @@
 import time
+import os
 
 from confluent_kafka import Consumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.serialization import SerializationContext, MessageField
 
-from consumer_tools import load_schema, create_deserializer
+from consumer_tools import setup_deserializer
+
+# --- Define Inputs ---
+bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:19092')
+print(f'KAFKA_BOOTSTRAP_SERVERS: {bootstrap_servers}')
+schema_registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8084')
+print(f'SCHEMA_REGISTRY_URL: {schema_registry_url}')
+serialization = os.getenv('SERIALIZATION', None)
+print(f'SERIALIZATION: {serialization}')
+schema_loc = os.getenv('SCHEMA_LOC', None)
+print(f'SCHEMA_LOC: {schema_loc}')
+schema_file_path = os.getenv('SCHEMA_FILE_PATH', None)
+topics = os.getenv('TOPICS', 'customers').split(',')
+print(f'TOPICS: {topics}')
+topics = [topic.strip() for topic in topics] #Strip any extra whitespace
+print(f'TOPICS after trim whitespace: {topics}')
+sleep_time = int(os.getenv('SLEEP_TIME', '1')) # Sleep between each message
+print(f'SLEEP_TIME: {sleep_time}')
+client_id = os.getenv('CLIENT_ID', 'my-python-consumer')
+print(f'CLIENT_ID: {client_id}')
+consumer_group_id = os.getenv('CONSUMER_GROUP_ID', 'my-mostly-pythonic-consumer-group')
+print(f'CONSUMER_GROUP_ID: {consumer_group_id}')
+auto_offset_reset = os.getenv('AUTO_OFFSET_RESET', 'earliest')
+print(f'AUTO_OFFSET_RESET: {auto_offset_reset}')
 
 # -- Consumer Config --
-bootstrap_servers = "localhost:19092"
-topics = ["customers"]
-sleep_time = 1 # Sleep between each message
-client_id = "my-python-consumer"
-consumer_group_id = "my-pythonic-consumer-group"
-offset_config = "earliest"
 conf = {
     'bootstrap.servers': bootstrap_servers,
     'client.id': client_id,
@@ -21,35 +39,16 @@ conf = {
     # 'ssl.ca.location': '../sslcerts/ca.pem',
     # 'ssl.certificate.location': '../sslcerts/service.cert',
     # 'ssl.key.location': '../sslcerts/service.key', 
-    'auto.offset.reset': offset_config,
+    'auto.offset.reset': auto_offset_reset,
     }
 
 # SR config, constructor, schema definition, serialization type
-schema_registry_url = "http://localhost:8081"
 schema_registry_conf = {'url': schema_registry_url, 'basic.auth.user.info': '<SR_UserName:SR_Password>'}
 
 schema_registry_client = SchemaRegistryClient(schema_registry_conf)
 
-schema_loc = 'local' # local or remote
-schema_file = './schemas/customer-1.avsc' # or .json
-# schema_id = 1
-subject = 'customers-value'
-
-serialization = "none"
-
-# --- Create deserializer ---
-if serialization in ['json', 'avro']:
-    if schema_loc == 'local':
-        schema_str = load_schema(schema_loc, schema_file)
-    elif schema_loc == 'remote':
-        schema_str = load_schema(schema_loc, None, schema_id, schema_registry_url)
-    else:
-        raise ValueError(f"Invalid schema location: {schema_loc}. Expected 'local' or 'remote'.")
-    
-    deserializer = create_deserializer(serialization, schema_str, schema_registry_client)
-    print(f"Success: Created {serialization.upper()} serializer.")
-else:
-    create_deserializer(serialization, None, None)
+# --- Set the deserializer ---
+deserializer = setup_deserializer(serialization = serialization, schema_loc = schema_loc, schema_registry_client=schema_registry_client)
 
 # --- Creating the Consumer ---
 consumer = Consumer(conf)
@@ -68,17 +67,17 @@ try:
 
             else:
                     key = msg.key().decode('utf-8')
-                    if serialization in ['json', 'avro']:
-                          value = deserializer(msg.value(), SerializationContext(topics[0], MessageField.VALUE))
-                    elif serialization == 'none':
+                    if serialization == None:
                         value = msg.value().decode('utf-8')
+                    elif serialization in ['json', 'avro']:
+                          value = deserializer(msg.value(), SerializationContext(topics[0], MessageField.VALUE))
                     else:
-                        raise ValueError(f"Invalid serialization type: {serialization}. Expected 'avro', 'json' or 'none'.")
+                        raise ValueError(f"Invalid serialization type: {serialization}. Expected 'avro', 'json' or None.")
                     
                     print(f"{msg.partition()}:{msg.offset()}: "
                         f"k={key} "
                         f"v={value}")
-                    time.sleep(sleep_time)  
+                    time.sleep(sleep_time)
 
         except KeyboardInterrupt:
             print("KeyboardInterrupt detected. Stopping the consumer...")

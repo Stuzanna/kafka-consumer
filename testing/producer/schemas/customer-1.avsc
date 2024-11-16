@@ -1,0 +1,34 @@
+{
+  "namespace": "company.namespace",
+  "type": "record",
+  "name": "customer.avro",
+  
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Name of customer"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "doc": "Customer's address"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "Customer's email"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "Timestamp YYYY-MM-DD HH:MM:SS"
+    },
+    {
+        "name": "favorite_color",
+        "type": ["null", "string"],
+        "doc": "Favorite color of the customer",
+        "default": null
+    }
+  ]
+}
